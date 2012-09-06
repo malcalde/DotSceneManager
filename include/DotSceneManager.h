@@ -15,7 +15,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
 #ifndef __DOTSCENEMANAGER_H__
 #define __DOTSCENEMANAGER_H__
 
