@@ -381,6 +381,8 @@ namespace Ogre {
         int mQueryFlags;
         /** Scene Visibility flag */
         int mVisibilityFlags;
+        /** Animation package */
+        int mAnimationPackage;
         
         /** Node properties: UserData */
         PropertyList mProperties;

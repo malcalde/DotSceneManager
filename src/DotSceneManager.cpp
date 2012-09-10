@@ -43,9 +43,6 @@
 #define CREATE_SCENE_MODE_AUTO          "auto"
 #define CREATE_SCENE_MODE_MANUAL        "manual"
 
-#define NEAR_CLIP_DISTANCE              5
-#define FAR_CLIP_DISTANCE               5
-
 #ifdef __GNUC__
     #define _FUNC_              String(__PRETTY_FUNCTION__)
     #define TRACE_FUNC()        log(_FUNC_)
@@ -55,6 +52,12 @@
     #define TRACE_FUNC()        log(_FUNC_)
     #define P4H_TRACE_LOG(msg)  log(_FUNC_ + " " + msg)    
 #endif
+
+#define NEAR_CLIP_DISTANCE              5
+#define FAR_CLIP_DISTANCE               5
+
+#define ANIMATION_PKG_MAYA              0
+#define ANIMATION_PKG_OTHER             1
 
 using namespace Ogre;
 
@@ -1202,6 +1205,14 @@ void DotScene::processLight(TiXmlElement* node, SceneNode* parent)
         Vector3 direction;
         orientation.ToAxes(&direction);
         light->setDirection(direction);
+        
+        //Fix some speficic animation package issues 
+        //   exporter is not considering coordinate system (Y-UP for maya Z-UP fro Ogre) 
+        if (ANIMATION_PKG_MAYA == mAnimationPackage)
+        {
+            direction = orientation * Vector3::UNIT_Z;
+            light->setDirection(direction);
+        }
     }
     // Process direction alternative alternative(?)
     elem = node->FirstChildElement("quaternion");
@@ -1211,6 +1222,14 @@ void DotScene::processLight(TiXmlElement* node, SceneNode* parent)
         Vector3 direction;
         orientation.ToAxes(&direction);
         light->setDirection(direction);
+        
+        //Fix some speficic animation package issues 
+        //   exporter is not considering coordinate system (Y-UP for maya Z-UP fro Ogre) 
+        if (ANIMATION_PKG_MAYA == mAnimationPackage)
+        {
+            direction = orientation * Vector3::UNIT_Z;
+            light->setDirection(direction);
+        }
     }
     
     // Process colourDiffuse (?)
