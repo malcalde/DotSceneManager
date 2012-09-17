@@ -197,7 +197,7 @@ DotScene::DotScene(ResourceManager* creator,
           mAmbientLight(ColourValue::White),
           mBackgroundColor(ColourValue::Black)
 {
-    TRACE_FUNC();
+    TRACE_FUNC(); 
     
     assert(params);
     assert(params->end() != params->find("file"));
@@ -217,22 +217,10 @@ DotScene::DotScene(ResourceManager* creator,
             mCreateSceneMode = (it->second == CREATE_SCENE_MODE_AUTO)? true: false;
     }
     
-    mClipPlanes.mNear = NEAR_CLIP_DISTANCE;
-    mClipPlanes.mFar = FAR_CLIP_DISTANCE;
-    
-    mDefaultCameras.clear();
-    mSceneNodes.clear();
-    mSceneNodes.clear();
-    mDynamicEntities.clear();
-    mStaticEntities.clear();
-    mLights.clear();
-    mCameras.clear();
-    mBillboardSets.clear();
-    mParticleSystem.clear();
-    mExternals.clear();
-    mMeshes.clear();
-    mUserReferences.clear();
-    mProperties.clear();
+     for(int i=0; i<DOTSCENE_MAX_VIEWPORTS; i++)
+    {
+        mBackupViewport[i] = 0;
+    }
 }
 //----------------------------------------------------------------------------
 DotScene::~DotScene()
@@ -260,6 +248,36 @@ void DotScene::loadImpl()
 {
     TRACE_FUNC();
     //Clean internal structures
+    mClipPlanes.mNear = NEAR_CLIP_DISTANCE;
+    mClipPlanes.mFar = FAR_CLIP_DISTANCE;
+    
+    mDefaultCameras.clear();
+    mSceneNodes.clear();
+    mDynamicEntities.clear();
+    mStaticEntities.clear();
+    mLights.clear();
+    mCameras.clear();
+    mBillboardSets.clear();
+    mParticleSystem.clear();
+    mExternals.clear();
+    mMeshes.clear();
+    mUserReferences.clear();
+    mProperties.clear();
+    mRenderTextures.clear();
+    
+    mAmbientLight = ColourValue::White;
+    mAnimationPackage = ANIMATION_PKG_OTHER;
+    mBackgroundColor = ColourValue::Black;
+    
+    for(int i=0; i<DOTSCENE_MAX_VIEWPORTS; i++)
+    {
+        assert(! mBackupViewport[i]);
+    }
+    
+    mUpAxis = UP_AXIS_Z;
+    mQueryFlags = 0;
+    mVisibilityFlags = 0;
+ 
     
     //Load & parse scene file
     TiXmlDocument* doc = 0;
@@ -311,6 +329,8 @@ void DotScene::loadImpl()
         return;
     }
 
+    //backup current viewport configuracion
+    backupViewportConfiguration();
 
     // Process the scene - always work in radian units
     Math::AngleUnit angleUnit = Math::getAngleUnit();
@@ -359,6 +379,10 @@ void DotScene::loadImpl()
         }
     }
     
+    for(int i=0; i<window->getNumViewports(); i++)
+    {
+        log("Default camera for viewport " + stringify(i) + " is " + window->getViewport(i)->getCamera()->getName());
+    }
         
         
     //if Auto create scene flag is set attach sceneNode to RootSceneNode
@@ -374,6 +398,9 @@ void DotScene::unloadImpl()
     TRACE_FUNC();
     
     cleanResources();
+    
+    //recuperamos la configuracion de cameras y viewport
+    restoreViewportConfiguration();
 }
 //----------------------------------------------------------------------------
 size_t DotScene::calculateSize() const
@@ -398,14 +425,6 @@ size_t DotScene::calculateSize() const
 //----------------------------------------------------------------------------
 void DotScene::cleanResources()
 {
-    
-    //Destroy objects
-    for(StringVector::iterator it= mStaticEntities.begin(); it!=mStaticEntities.end(); it++)
-        mSceneMgr->destroyEntity(*it);
-    for(StringVector::iterator it= mDynamicEntities.begin(); it!=mDynamicEntities.end(); it++)
-        mSceneMgr->destroyEntity(*it);
-    for(StringVector::iterator it= mCameras.begin(); it!=mCameras.end(); it++)
-        mSceneMgr->destroyCamera(*it);
     for(StringVector::iterator it= mLights.begin(); it!=mLights.end(); it++)
         mSceneMgr->destroyLight(*it);
     for(StringVector::iterator it= mBillboardSets.begin(); it!=mBillboardSets.end(); it++)
@@ -415,17 +434,24 @@ void DotScene::cleanResources()
     for(StringVector::iterator it= mParticleSystem.begin(); it!=mParticleSystem.end(); it++)
         mSceneMgr->destroyParticleSystem(*it);
     
-    //mSceneMgr->destroyAllBillboardChains();
-    //mSceneMgr->destroyAllAnimations();
-    //mSceneMgr->destroyAllRibbonTrails();
-    //mSceneMgr->destroyStaticGeometry();
+    for(StringVector::iterator it= mCameras.begin(); it!=mCameras.end(); it++)
+            mSceneMgr->destroyCamera(*it);
     
+    //Destroy scene nodes
+    for(StringVector::iterator it= mStaticEntities.begin(); it!=mStaticEntities.end(); it++)
+        mSceneMgr->destroyEntity(*it);
+    for(StringVector::iterator it= mDynamicEntities.begin(); it!=mDynamicEntities.end(); it++)
+        mSceneMgr->destroyEntity(*it);
+    for(StringVector::iterator it= mSceneNodes.begin(); it!=mSceneNodes.end(); it++)
+        mSceneMgr->destroySceneNode(*it);        
+            
     //Clean scene
+    mSceneRoot->setVisible(false);    
     setVisible(false);
     mSceneMgr->destroySceneNode(mSceneRoot);
+    mSceneRoot = 0;
         
     //Clean local structures
-    mSceneNodes.clear();
     mSceneNodes.clear();
     mDynamicEntities.clear();
     mStaticEntities.clear();
@@ -437,6 +463,9 @@ void DotScene::cleanResources()
     mMeshes.clear();
     mUserReferences.clear();
     mProperties.clear();
+    mDefaultCameras.clear();
+    mProperties.clear();
+    mRenderTextures.clear(); 
 }
 //----------------------------------------------------------------------------
 Quaternion DotScene::getUpAxisOrientation()
@@ -466,7 +495,140 @@ Vector3 DotScene::getUpVector()
 void DotScene::setDefaultLighting()
 {
     TRACE_FUNC();
-    //assert(false);
+    assert(true);
+}
+//----------------------------------------------------------------------------
+void DotScene::backupViewportConfiguration()
+{
+    RenderWindow* window =  Root::getSingletonPtr()->getAutoCreatedWindow();
+    if (window->getNumViewports() > 0)
+    {
+        for(int i=0; i<window->getNumViewports(); i++)
+        {
+            Viewport* viewport = window->getViewport(i);
+            
+            ViewportConfigurationType* backup = new ViewportConfigurationType();
+            backup->mTop = viewport->getTop();
+            backup->mLeft = viewport->getLeft();
+            backup->mHeight = viewport->getHeight();
+            backup->mWidth = viewport->getWidth();
+            backup->mBackgroundColor = viewport->getBackgroundColour();
+            backup->mClearEveryFrame = viewport->getClearEveryFrame();
+            backup->mMaterialSchema = viewport->getMaterialScheme();
+            backup->mRenderQueueInvocationSequenceName = viewport->getRenderQueueInvocationSequenceName();
+            backup->mOverlaysEnabled = viewport->getOverlaysEnabled();
+            backup->mShadowsEnabled = viewport->getShadowsEnabled();
+            backup->mSkiesEnabled = viewport->getSkiesEnabled();
+            backup->mVisibilityMask = viewport->getVisibilityMask();
+            backup->mZOrder = viewport->getZOrder(); 
+            
+            if(viewport->getCamera())
+            {
+                Camera* camera = viewport->getCamera();
+                backup->mCamera.mName = camera->getName();
+                backup->mCamera.mPosition = camera->getPosition();
+                backup->mCamera.mDirection = camera->getDirection();
+                backup->mCamera.mOrientation = camera->getOrientation();
+                backup->mCamera.mPolygonMode = camera->getPolygonMode();
+                backup->mCamera.mNearPlane = camera->getNearClipDistance(); 
+                backup->mCamera.mFarPlane = camera->getFarClipDistance();
+                backup->mCamera.mProjectionType = camera->getProjectionType();
+                backup->mCamera.mFOVy = camera->getFOVy();
+                backup->mCamera.mAspectRatio = camera->getAspectRatio();
+                backup->mCamera.mCastShadows = camera->getCastShadows();
+                backup->mCamera.mUpAxis = camera->getUp();
+                backup->mCamera.mFocalLenght = camera->getFocalLength();
+                backup->mCamera.mVisibilityFlags = camera->getVisibilityFlags(); 
+                backup->mCamera.mQueryFlags = camera->getQueryFlags(); 
+                backup->mCamera.mLightMask = camera->getLightMask();
+            }
+            
+            log("[Viewport-Backup] Getting camera " + backup->mCamera.mName +  " from viewport " 
+                    + stringify(i));
+            
+            mBackupViewport[i] = backup;
+        }   
+    } 
+}
+//----------------------------------------------------------------------------
+void DotScene::restoreViewportConfiguration()
+{
+    Root* root = Root::getSingletonPtr();
+    RenderWindow* window = root->getAutoCreatedWindow();
+    
+    for(int i=0; i<DOTSCENE_MAX_VIEWPORTS; i++)
+    {
+        ViewportConfigurationType* backup = mBackupViewport[i];
+        
+        if (! backup) continue;
+        
+        log("[Viewport-Restore] Setting camera " + backup->mCamera.mName +  " to viewport " + 
+                 stringify(i));
+        
+        if (window->getNumViewports() > i)
+        {
+            Viewport* viewport = window->getViewport(i);
+            Camera* camera = mSceneMgr->getCamera(backup->mCamera.mName);
+            if (! camera)
+                mSceneMgr->createCamera(backup->mCamera.mName);
+            viewport->setCamera(camera);
+            
+            setDefaultCamera(camera->getName(), i, backup->mZOrder);
+            
+            //restore camera settings
+            camera->setPosition(backup->mCamera.mPosition);
+            camera->setDirection(backup->mCamera.mDirection);
+            camera->setOrientation(backup->mCamera.mOrientation);
+            camera->setPolygonMode(backup->mCamera.mPolygonMode);
+            camera->setNearClipDistance(backup->mCamera.mNearPlane); 
+            camera->setFarClipDistance(backup->mCamera.mFarPlane);
+            camera->setProjectionType(backup->mCamera.mProjectionType);
+            camera->setFOVy(backup->mCamera.mFOVy);
+            camera->setAspectRatio(backup->mCamera.mAspectRatio);
+            camera->setCastShadows(backup->mCamera.mCastShadows);
+            camera->setFocalLength(backup->mCamera.mFocalLenght);
+            camera->setVisibilityFlags(backup->mCamera.mVisibilityFlags); 
+            camera->setQueryFlags(backup->mCamera.mQueryFlags); 
+            camera->setLightMask(backup->mCamera.mLightMask);
+            
+            //restore viewport settings
+            viewport->setDimensions(backup->mTop,backup->mLeft,
+                                    backup->mWidth,backup->mHeight);
+            viewport->setBackgroundColour(backup->mBackgroundColor);
+            viewport->setClearEveryFrame(backup->mClearEveryFrame);
+            viewport->setMaterialScheme(backup->mMaterialSchema);
+            viewport->setRenderQueueInvocationSequenceName(backup->mRenderQueueInvocationSequenceName);
+            viewport->setOverlaysEnabled(backup->mOverlaysEnabled);
+            viewport->setShadowsEnabled(backup->mShadowsEnabled);
+            viewport->setSkiesEnabled(backup->mSkiesEnabled);
+            viewport->setVisibilityMask(backup->mVisibilityMask);
+        }
+        else 
+        {
+           Camera* camera = mSceneMgr->getCamera(backup->mCamera.mName);
+            if (! camera)
+                mSceneMgr->createCamera(backup->mCamera.mName); 
+            
+            camera->setPosition(backup->mCamera.mPosition);
+            camera->setDirection(backup->mCamera.mDirection);
+            camera->setOrientation(backup->mCamera.mOrientation);
+            camera->setPolygonMode(backup->mCamera.mPolygonMode);
+            camera->setNearClipDistance(backup->mCamera.mNearPlane); 
+            camera->setFarClipDistance(backup->mCamera.mFarPlane);
+            camera->setProjectionType(backup->mCamera.mProjectionType);
+            camera->setFOVy(backup->mCamera.mFOVy);
+            camera->setAspectRatio(backup->mCamera.mAspectRatio);
+            camera->setCastShadows(backup->mCamera.mCastShadows);
+            camera->setFocalLength(backup->mCamera.mFocalLenght);
+            camera->setVisibilityFlags(backup->mCamera.mVisibilityFlags); 
+            camera->setQueryFlags(backup->mCamera.mQueryFlags); 
+            camera->setLightMask(backup->mCamera.mLightMask);
+            
+            window->addViewport(camera, backup->mZOrder, backup->mTop, backup->mLeft, backup->mWidth, backup->mHeight);
+        }
+        
+        delete backup; backup = 0; mBackupViewport[i] = 0;
+    }
 }
 //----------------------------------------------------------------------------
 const String& DotScene::getName()
@@ -523,8 +685,13 @@ void DotScene::processScene(TiXmlElement* root)
     str = getAttrib(root, "ogreMaxVersion", "unknown");
     mProperties.push_back(new SceneNodeProperty<DotScene>(this,"ogreMaxVersion",str,SCENE));
     str = getAttrib(root, "application", "unknown");
-    mProperties.push_back(new SceneNodeProperty<DotScene>(this,"application",str,SCENE));
-    
+    {
+        mProperties.push_back(new SceneNodeProperty<DotScene>(this,"application",str,SCENE));
+        StringUtil::toLowerCase(str);
+        
+        mAnimationPackage = ANIMATION_PKG_OTHER;
+        if ("maya" == str) mAnimationPackage = ANIMATION_PKG_MAYA;
+    }
     //Calculamos factor de conversion de unidades de escena
     mUnitConversionFactor = /*getAttribReal(root, "unitsPerMeter", 100.0f)*/ 1.0f;
     
@@ -539,7 +706,7 @@ void DotScene::processScene(TiXmlElement* root)
     assert(! mSceneMgr->hasSceneNode(mPrefix + this->getName() + "RootNode")); //Nunca deberia pasar
     
     mSceneRoot = mSceneMgr->createSceneNode(mPrefix + this->getName() + "RootNode");
-    mSceneNodes.push_back(mSceneRoot->getName());
+    //mSceneNodes.push_back(mSceneRoot->getName());
     
     // Process nodes (?)
     elem = root->FirstChildElement("nodes");
@@ -2379,6 +2546,7 @@ void DotScene::processPlane(TiXmlElement* node, SceneNode* parent)
         
         SceneNode* planeNode = mSceneMgr->createSceneNode(name + "Node");
         mSceneNodes.push_back(planeNode->getName());
+        
         planeNode->attachObject(entity);
         parent->addChild(planeNode);
         
@@ -3888,18 +4056,20 @@ Camera* DotScene::getDefaultCamera(int idx_viewport/*=0*/)
     return 0;
 }
 //----------------------------------------------------------------------------
-Camera* DotScene::setDefaultCamera(const String& camera, int idx_viewport/*=0*/)
+Camera* DotScene::setDefaultCamera(const String& camera, int idx_viewport/*=0*/, int zorder/*=0*/)
 {
     assert(StringUtil::BLANK != camera);
     assert(mSceneMgr->getCamera(camera));
-    assert(mCameras.size());
-    
-    StringVector::iterator it_camera = mCameras.begin();
-    for(StringVector::iterator it_camera=mCameras.begin(); it_camera!=mCameras.end(); it_camera++)
-    {
-        if (camera == *it_camera) break;
-    }
-    assert(it_camera != mCameras.end());
+    //assert(mCameras.size());
+   
+//     StringVector::iterator it_camera = mCameras.begin();
+//     for(StringVector::iterator it_camera=mCameras.begin(); it_camera!=mCameras.end(); it_camera++)
+//     {
+//         if (camera == *it_camera) break;
+//     }
+//     assert(it_camera != mCameras.end());
+   
+    log("Setting default camera " + camera + " to viewport "  + stringify(idx_viewport));
     
     std::map<int,String>::iterator it_default = mDefaultCameras.find(idx_viewport);
     if (it_default != mDefaultCameras.end())
@@ -3917,7 +4087,7 @@ Camera* DotScene::setDefaultCamera(const String& camera, int idx_viewport/*=0*/)
     }
     else
     {
-        Viewport* viewport = window->addViewport(mSceneMgr->getCamera(camera));
+        Viewport* viewport = window->addViewport(mSceneMgr->getCamera(camera), zorder);
         viewport->setBackgroundColour(mBackgroundColor);
     }
 }
@@ -4197,23 +4367,6 @@ Resource* DotSceneManager::createImpl(const String &name,
 /*****************************************************************************/
 /** DotScenePersistenceHelper (implementation)                               */                   
 /*****************************************************************************/
-DotScenePersistenceHelper::DotScenePersistenceHelper(DotScene* scene): mScene(scene)
-{
-}
-//----------------------------------------------------------------------------
-DotScenePersistenceHelper::~DotScenePersistenceHelper()
-{
-}
-//----------------------------------------------------------------------------
-bool DotScenePersistenceHelper::persist(const String& filename/*=StringUtil::BLANK*/)
-{
-    TRACE_FUNC();
-    assert(false);
-}
-
-/*****************************************************************************/
-/** helper functions          (definition )                                  */                   
-/*****************************************************************************/
 static void log(const String& formatString, ...)
 {
     static char msg[1024]; // Buffer for error messages - hopefully long enough...
@@ -4222,7 +4375,7 @@ static void log(const String& formatString, ...)
     va_start(ap, 0);
     vsnprintf(msg, sizeof(msg), fmMsg, ap);
     va_end(ap);
-    Ogre::LogManager::getSingleton().logMessage(String(msg));
+    LogManager::getSingleton().logMessage(String(msg));
 }
 //----------------------------------------------------------------------------
 static String generateUUID(const String& prefix/*=BLANK*/, const String& suffix/*=BLANK*/)

@@ -15,12 +15,12 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __DOTSCENEMANAGER_H__
-#define __DOTSCENEMANAGER_H__
+#ifndef __P4HDOTSCENEMANAGER_H__
+#define __P4HDOTSCENEMANAGER_H__
 
-/****************************************************************************/
 #include <Ogre.h>
 
+/****************************************************************************/
 // Enable GCC symbol visibility
 #   ifdef __GNUC__ 
 #       define _DotSceneManagerExport  __attribute__ ((visibility("default")))
@@ -30,8 +30,9 @@
 #       define _DotSceneManagerPrivate
 #   endif
 
-/****************************************************************************/
+#define DOTSCENE_MAX_VIEWPORTS  8
 
+/****************************************************************************/
 // Forward declarations
 class TiXmlElement;
 // Forward declarations
@@ -43,7 +44,7 @@ namespace Ogre {
     typedef int Integer;
     /** datatype string maps */
     typedef std::map<String,String> StringMap;
-
+    
     /** datatype .dotscenenode type */
     typedef enum 
     {
@@ -107,14 +108,14 @@ namespace Ogre {
     typedef struct 
     { 
         /** Clip plane near */
-        Real mNear;
+        Ogre::Real mNear;
         /** Clip plane far */
-        Real mFar;
+        Ogre::Real mFar;
     } ClippingPlanesType; //ClippingPlanesType
     
     /****************************************************************************/
     /** Clase recurso escena tipo .dotscene */
-    class _DotSceneManagerExport DotScene : public Resource
+    class _DotSceneManagerExport DotScene : public Ogre::Resource
     {
     public:
         typedef enum 
@@ -126,13 +127,13 @@ namespace Ogre {
         
     public:
         /** Constructor */
-        DotScene(ResourceManager* creator, 
-                 const String& name, 
-                 ResourceHandle handle, 
-                 const String& group,
-                 const NameValuePairList* params=0,
+        DotScene(Ogre::ResourceManager* creator, 
+                 const Ogre::String& name, 
+                 Ogre::ResourceHandle handle, 
+                 const Ogre::String& group,
+                 const Ogre::NameValuePairList* params=0,
                  bool isManual=false, 
-                 ManualResourceLoader* loader=0);
+                 Ogre::ManualResourceLoader* loader=0);
  
         virtual ~DotScene();
     
@@ -140,29 +141,29 @@ namespace Ogre {
         const String& getName();
         
         /** @return scene manager */
-        SceneManager* getSceneManager();
+        Ogre::SceneManager* getSceneManager();
         /** @return scene root node */
-        SceneNode* getRootSceneNode();
+        Ogre::SceneNode* getRootSceneNode();
      
-        /** Change scene visibility status  - attach to RootSceneNode*/
+        /** Change scene visibility status  - attach to Ogre::RootSceneNode*/
         void setVisible(bool visible);
         /** Get scene visibility status */
         bool getVisible(void);
         
-        /** return SceneNode in scene or null */
-        SceneNode* getSceneNode(const String& sceneNode);
-        /** return Entity in scene or null */
-        Entity* getEntity(const String& entity);
-        /** return Light in scene or null */
-        Light* getLight(const String& light);
-        /** return Camera in scene or null */
-        Camera* getCamera(const String& camera);
-        /** return BillboardSet in scene or null */
-        BillboardSet* getBillboardSet(const String& billboardSet);
-        /** return ParticleSystem in scene or null */
-        ParticleSystem* getParticleSystem(const String& particleSystem);
-        /** return Mesh in scene or null */
-        Mesh* getMesh(const String& mesh);
+        /** return Ogre::SceneNode in scene or null */
+        Ogre::SceneNode* getSceneNode(const String& sceneNode);
+        /** return Ogre::Entity in scene or null */
+        Ogre::Entity* getEntity(const String& entity);
+        /** return Ogre::Light in scene or null */
+        Ogre::Light* getLight(const String& light);
+        /** return Ogre::Camera in scene or null */
+        Ogre::Camera* getCamera(const String& camera);
+        /** return Ogre::BillboardSet in scene or null */
+        Ogre::BillboardSet* getBillboardSet(const String& billboardSet);
+        /** return Ogre::ParticleSystem in scene or null */
+        Ogre::ParticleSystem* getParticleSystem(const String& particleSystem);
+        /** return Ogre::Mesh in scene or null */
+        Ogre::Mesh* getMesh(const String& mesh);
         /** return la lista  de propiedades de un nodo de la escena */
         const PropertyList getProperties(const String& node);
         /** return la lista  de propiedades de un nodo de la escena */
@@ -175,9 +176,9 @@ namespace Ogre {
         bool getPropertyBool(const String& node, const String& name);
         
         /** return default camera or null*/
-        Camera* getDefaultCamera(int viewport=0);
+        Ogre::Camera* getDefaultCamera(int viewport=0);
         /** return default camera or null*/
-        Camera* setDefaultCamera(const String& camera, int viewport=0);
+        Ogre::Camera* setDefaultCamera(const String& camera, int viewport=0, int zorder=0);
         
         /** change camera in viewport */
         void viewSceneFromCamera(const String& camera, bool fitToWholeScene=false);
@@ -225,27 +226,27 @@ namespace Ogre {
         /** dotscene loader method: process 'octMesh' node*/
         void processOctMesh(TiXmlElement* node);
         /** dotscene loader method: process 'light' node*/
-        void processLight(TiXmlElement* node, SceneNode* parent);
+        void processLight(TiXmlElement* node, Ogre::SceneNode* parent);
         /** dotscene loader method: process 'camera' node*/
-        void processCamera(TiXmlElement* node, SceneNode* parent);
+        void processCamera(TiXmlElement* node, Ogre::SceneNode* parent);
         /** dotscene loader method: process 'node' node*/
-        void processNode(TiXmlElement* node, SceneNode* parent);
+        void processNode(TiXmlElement* node, Ogre::SceneNode* parent);
         /** dotscene loader method: process 'look-target' node*/
-        void processLookTarget(TiXmlElement* node, SceneNode* parent);
+        void processLookTarget(TiXmlElement* node, Ogre::SceneNode* parent);
         /** dotscene loader method: process 'track-target' node*/
-        void processTrackTarget(TiXmlElement* node, SceneNode* parent);
+        void processTrackTarget(TiXmlElement* node, Ogre::SceneNode* parent);
         /** dotscene loader method: process 'entity' node*/
-        void processEntity(TiXmlElement* node, SceneNode* parent);
+        void processEntity(TiXmlElement* node, Ogre::SceneNode* parent);
         /** dotscene loader method: process 'entity' node*/
-        void processEntity(TiXmlElement* node, InstancedGeometry* geometry);
+        void processEntity(TiXmlElement* node, Ogre::InstancedGeometry* geometry);
         /** dotscene loader method: process 'entity' node*/
-        void processEntity(TiXmlElement* node, StaticGeometry* geometry);
+        void processEntity(TiXmlElement* node, Ogre::StaticGeometry* geometry);
         /** dotscene loader method: process 'particle-system' node*/
-        void processParticleSystem(TiXmlElement* node, SceneNode* parent);
+        void processParticleSystem(TiXmlElement* node, Ogre::SceneNode* parent);
         /** dotscene loader method: process 'billboard' node*/
-        void processBillboardSet(TiXmlElement* node, SceneNode* parent);
+        void processBillboardSet(TiXmlElement* node, Ogre::SceneNode* parent);
         /** dotscene loader method: process 'plane' node*/
-        void processPlane(TiXmlElement* node, SceneNode* parent);
+        void processPlane(TiXmlElement* node, Ogre::SceneNode* parent);
         /** dotscene loader method: process 'fog' node*/
         void processFog(TiXmlElement* node);
         /** dotscene loader method: process 'skybox' node*/
@@ -257,21 +258,21 @@ namespace Ogre {
         /** dotscene loader method: process 'clipping' node*/
         void processClipping(TiXmlElement* node, ClippingPlanesType* clippingPlanes);
         /** dotscene loader method: process 'light' node*/
-        void processLightRange(TiXmlElement* node, Light* light);
+        void processLightRange(TiXmlElement* node, Ogre::Light* light);
         /** dotscene loader method: process 'scene' node*/
-        void processLightAttenuation(TiXmlElement* node, Light* light);
+        void processLightAttenuation(TiXmlElement* node, Ogre::Light* light);
         /** process vertex buffer */
-        void processVertexBuffer(TiXmlElement* node, HardwareVertexBuffer::Usage* usage, bool* useShadowBuffer);
+        void processVertexBuffer(TiXmlElement* node, Ogre::HardwareVertexBuffer::Usage* usage, bool* useShadowBuffer);
         /** process index buffer */
-        void processIndexBuffer(TiXmlElement* node, HardwareIndexBuffer::Usage* usage, bool* useShadowBuffer);
+        void processIndexBuffer(TiXmlElement* node, Ogre::HardwareIndexBuffer::Usage* usage, bool* useShadowBuffer);
         /** process animation */
-        void processAnimation(TiXmlElement* node, SceneNode* parent);
+        void processAnimation(TiXmlElement* node, Ogre::SceneNode* parent);
         /** process animation keyframe */
-        void processAnimationKeyFrame(TiXmlElement* node, SceneNode* parent);
+        void processAnimationKeyFrame(TiXmlElement* node, Ogre::SceneNode* parent);
         /** process shadows */
         void processShadow(TiXmlElement* node);
         /** process subentity */
-        void processSubEntity(TiXmlElement* node, Entity* entity);
+        void processSubEntity(TiXmlElement* node, Ogre::Entity* entity);
         /** process shadowcamerasetup */
         void processShadowCameraSetup(TiXmlElement* node);
         /** process renderTextures */
@@ -283,13 +284,13 @@ namespace Ogre {
         /** process PortalConnectedZones */
         void processPortalConnectedZones(TiXmlElement* node);
         /** process NoteTrack */
-        void processNoteTrack(TiXmlElement* node, SceneNode* parent);
+        void processNoteTrack(TiXmlElement* node, Ogre::SceneNode* parent);
         /** process NoteTrack */
-        void processNoteTrack(TiXmlElement* node, Entity* entity);
+        void processNoteTrack(TiXmlElement* node, Ogre::Entity* entity);
         /** process CustomParameter */
-        void processCustomParameter(TiXmlElement* node, Entity* entity);
+        void processCustomParameter(TiXmlElement* node, Ogre::Entity* entity);
         /** process BoneAttachment */
-        void processBoneAttachment(TiXmlElement* node, Entity* entity);
+        void processBoneAttachment(TiXmlElement* node, Ogre::Entity* entity);
         
         /** dotscene helper method: tinyxml get attribute*/
         String getAttrib(TiXmlElement* node, const String& parameter, const String& defaultValue=StringUtil::BLANK);
@@ -300,29 +301,29 @@ namespace Ogre {
         /** dotscene helper method: tinyxml get attribute boolean*/
         bool getAttribBool(TiXmlElement *node, const String& parameter, bool defaultValue=false);
         
-        /** dotscene helper method: parse value to Vector3*/
-        Vector3 parseVector3(TiXmlElement* node);
-        /** dotscene helper method: parse value to Quaternion*/
-        Quaternion parseQuaternion(TiXmlElement* node);
-        /** dotscene helper method: parse value to ColourValue*/
-        ColourValue parseColour(TiXmlElement* node);
-        /** dotscene helper method: parse value to Plane*/
-        Plane parsePlane(TiXmlElement* node);
-        /** dotscene helper method: parse value to FloatRect*/
-        FloatRect parseFloatRectangle(TiXmlElement* node);
+        /** dotscene helper method: parse value to Ogre::Vector3*/
+        Ogre::Vector3 parseVector3(TiXmlElement* node);
+        /** dotscene helper method: parse value to Ogre::Quaternion*/
+        Ogre::Quaternion parseQuaternion(TiXmlElement* node);
+        /** dotscene helper method: parse value to Ogre::ColourValue*/
+        Ogre::ColourValue parseColour(TiXmlElement* node);
+        /** dotscene helper method: parse value to Ogre::Plane*/
+        Ogre::Plane parsePlane(TiXmlElement* node);
+        /** dotscene helper method: parse value to Ogre::FloatRect*/
+        Ogre::FloatRect parseFloatRectangle(TiXmlElement* node);
         
-        /** dotscene helper method: parse value to RenderQueue*/
+        /** dotscene helper method: parse value to Ogre::RenderQueue*/
         int parseRenderQueue(String& queue);
         /** dotscene helper method: parse value to query flags*/
         int parseQueryFlags(TiXmlElement* node);
         /** dotscene helper method: parse value to visibility flags*/
         int parseVisibilityFlags(TiXmlElement* node);
-        /** dotscene helper method: parse value to PixelFormat*/
-        PixelFormat parsePixelFormat(String& format);
-        /** dotscene helper method: parse value to TextureType*/
-        TextureType parseTextureType(String& type);
+        /** dotscene helper method: parse value to Ogre::PixelFormat*/
+        Ogre::PixelFormat parsePixelFormat(String& format);
+        /** dotscene helper method: parse value to Ogre::TextureType*/
+        Ogre::TextureType parseTextureType(String& type);
         /** dotscene helper method: parse value to autodetect angle units*/
-        Radian parseAngleUnit(Real value);
+        Ogre::Radian parseAngleUnit(Real value);
         
         /** dotscene loader method: process 'userdata' node*/
         template <typename T>
@@ -340,24 +341,82 @@ namespace Ogre {
         void cleanResources();
         
         /** return Quaternion for upAxis configuration */
-        Quaternion getUpAxisOrientation();
+        Ogre::Quaternion getUpAxisOrientation();
         /** return vector for upAxis configuration */
-        Vector3 getUpVector();
+        Ogre::Vector3 getUpVector();
         
         /** set default lighting schema */
         void setDefaultLighting();
+        
+        /** backup viewport & cameras configuration */
+        void backupViewportConfiguration();
+        /** restore viewport & cameras configuration */
+        void restoreViewportConfiguration();
     private:
+        /** datatype camera configuration */
+        typedef struct 
+        {
+            /** TODO */
+            String mName;
+            /** TODO */
+            Ogre::Vector3 mPosition;
+            /** TODO */
+            Ogre::Vector3 mDirection;
+            /** TODO */
+            Ogre::Quaternion mOrientation;
+            /** TODO */
+            Ogre::PolygonMode mPolygonMode;
+            /** TODO */
+            Ogre::Real mNearPlane, mFarPlane;
+            /** TODO */
+            Ogre::ProjectionType mProjectionType;
+            /** TODO */
+            Ogre::Radian mFOVy;
+            /** TODO */
+            Ogre::Real mAspectRatio;
+            /** TODO */
+            bool mCastShadows;
+            /** TODO */
+            Ogre::Vector3 mUpAxis;
+            /** TODO */
+            Ogre::Real mFocalLenght;
+            /** TODO */
+            Ogre::uint32 mVisibilityFlags, mQueryFlags; 
+            /** TODO */
+            Ogre::uint32 mLightMask;
+        } CameraConfigurationType;
+        /** datatype viewport configuration */
+        typedef struct 
+        {
+            /** Dimensions */ 
+            Ogre::Real mTop, mLeft, mWidth, mHeight;
+            /** Background color */
+            Ogre::ColourValue mBackgroundColor;
+            /** Visibility mask */
+            Ogre::uint mVisibilityMask;
+            /** Flag features */
+            bool mClearEveryFrame, mOverlaysEnabled, mShadowsEnabled, mSkiesEnabled;
+            /** Material & render queue */
+            Ogre::String mMaterialSchema, mRenderQueueInvocationSequenceName;
+            /** Z order */
+            int mZOrder;
+            /** Camera configuration */
+            CameraConfigurationType mCamera;
+        } ViewportConfigurationType;
+        
         /** Friend DotScenePersistenceHelper */
         friend class DotScenePersistenceHelper;
         /** Export helper class */
         DotScenePersistenceHelper* helper;
         
         /** Scene Manager used to create node */
-        SceneManager* mSceneMgr;
+        Ogre::SceneManager* mSceneMgr;
         /** Root scene node */
-        SceneNode* mSceneRoot;
+        Ogre::SceneNode* mSceneRoot;
         /** Default camera */
         std::map<int,String> mDefaultCameras;
+        /** Backup existing viewport */
+        ViewportConfigurationType* mBackupViewport[DOTSCENE_MAX_VIEWPORTS];
         
         /** Resource .dotscene filename */
         String mFile;
@@ -370,9 +429,9 @@ namespace Ogre {
         /** Units conversion factor */
         int mUnitConversionFactor;
         /** Background color */
-        ColourValue mBackgroundColor;
+        Ogre::ColourValue mBackgroundColor;
         /** Color ambient light*/
-        ColourValue mAmbientLight;
+        Ogre::ColourValue mAmbientLight;
         /** General clipping planes*/
         ClippingPlanesType mClipPlanes;
         /** Up axis configuration */
@@ -414,7 +473,7 @@ namespace Ogre {
     }; //Class DotScene
     
     /****************************************************************************/
-    class _DotSceneManagerExport DotScenePtr : public SharedPtr<DotScene>
+    class _DotSceneManagerExport DotScenePtr : public Ogre::SharedPtr<DotScene>
     {
     public :
         /** Constructor */
@@ -424,14 +483,15 @@ namespace Ogre {
         /** Constructor */
         DotScenePtr(const DotScenePtr& scenePtr);
         /** Constructor */
-        DotScenePtr(const ResourcePtr& resourcePtr);
+        DotScenePtr(const Ogre::ResourcePtr& resourcePtr);
         /** Constructor */
-        DotScenePtr& operator=(const ResourcePtr& resourcePtr);
+        DotScenePtr& operator=(const Ogre::ResourcePtr& resourcePtr);
     };//Class DotScenePtr
     
     /****************************************************************************/
     /** Clase manager de recursos escena tipo .dotscene */
-    class _DotSceneManagerExport DotSceneManager : public ResourceManager, public Singleton<DotSceneManager>
+    class _DotSceneManagerExport DotSceneManager : public Ogre::ResourceManager, 
+                                                   public Ogre::Singleton<DotSceneManager>
     {
     public:
         /** Constructor */
@@ -446,8 +506,8 @@ namespace Ogre {
         DotScenePtr createScene(const String& name, 
                                 const String& sceneFile=StringUtil::BLANK, 
                                 const String& namePrefix=StringUtil::BLANK,
-                                const String& groupName=ResourceGroupManager::AUTODETECT_RESOURCE_GROUP_NAME,
-                                const SceneManager* sceneManager=0,
+                                const String& groupName=Ogre::ResourceGroupManager::AUTODETECT_RESOURCE_GROUP_NAME,
+                                const Ogre::SceneManager* sceneManager=0,
                                 bool visible=true
                                );
         /** Create scene from file */
@@ -465,12 +525,12 @@ namespace Ogre {
         /** Singleton pattern */
         static DotSceneManager* getSingletonPtr();
     protected:
-        Resource *createImpl(const String &name, 
-                                   ResourceHandle handle, 
-                                   const String &group, 
+        Ogre::Resource *createImpl(const Ogre::String &name, 
+                                   Ogre::ResourceHandle handle, 
+                                   const Ogre::String &group, 
                                    bool isManual, 
-                                   ManualResourceLoader *loader, 
-                                   const NameValuePairList *createParams);
+                                   Ogre::ManualResourceLoader *loader, 
+                                   const Ogre::NameValuePairList *createParams);
     private:
         /** event emitter name */
         static const String msName;
@@ -481,4 +541,4 @@ namespace Ogre {
     }; //Class DotSceneManager
 }//namespace P4H
 
-#endif //__DOTSCENEMANAGER_H__
+#endif //__P4HSceneLoader_H__
