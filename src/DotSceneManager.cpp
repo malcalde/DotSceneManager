@@ -3567,6 +3567,59 @@ void DotScene::addProperty(T* reference, const  String& name, const String& valu
     }
 }
 //----------------------------------------------------------------------------
+template<typename T>
+const PropertyList& DotScene::findObjectByProperty(NodePropertyType type, const String& name, const String& value/*=BLANK*/)
+{
+    static PropertyList lst; 
+    
+    lst.clear();
+    for(PropertyListIterator it=mProperties.begin(); it!=mProperties.end(); it++)
+    {
+        SceneNodeProperty<T> *prop = *it;
+        if ((prop->mType == type) && (prop->mName == name))
+        {
+            if ((value == StringUtil::BLANK) || (prop->mValue == value))
+                lst.push_back(prop); 
+        }
+    }
+        
+    return lst;
+}
+//----------------------------------------------------------------------------
+template<typename T>
+const PropertyList& DotScene::getObjectProperties(T* reference)
+{
+    static PropertyList lst; 
+    
+    assert(reference);
+    
+    lst.clear();
+    for(PropertyListIterator it=mProperties.begin(); it!=mProperties.end(); it++)
+    {
+        SceneNodeProperty<T> *prop = *it;
+        if (prop->mNode == reference)
+            lst.push_back(prop); 
+    }
+        
+    return lst;
+}
+//----------------------------------------------------------------------------
+template<typename T>
+const PropertyList& DotScene::getObjectProperties(const String& name)
+{
+    static PropertyList lst; 
+    
+    lst.clear();
+    for(PropertyListIterator it=mProperties.begin(); it!=mProperties.end(); it++)
+    {
+        SceneNodeProperty<T> *prop = *it;
+        if (prop->mName == name)
+            lst.push_back(prop); 
+    }
+        
+    return lst;
+}
+//----------------------------------------------------------------------------
 String DotScene::getAttrib(TiXmlElement* node, const String& parameter, const String& defaultValue)
 {
     if(node->Attribute(parameter.c_str()))

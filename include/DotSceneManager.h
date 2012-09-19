@@ -195,6 +195,18 @@ namespace Ogre {
         /** debug facilities: hide skeleton for all entities*/
         void hideSkeletons();
         
+        /** dotscene helper method: get object by property */
+        template<typename T>
+        const PropertyList& findObjectByProperty(NodePropertyType type, const String& name, 
+                                                 const String& value=StringUtil::BLANK);
+        
+        /** dotscene helper method: get object properties */
+        template<typename T>
+        const PropertyList& getObjectProperties(T* reference);
+        /** dotscene helper method: get object properties */
+        template<typename T>
+        const PropertyList& getObjectProperties(const String& name);
+        
         /** 
          * export current scene to a .scene file 
          * @param String filename
